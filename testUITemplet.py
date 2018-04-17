@@ -61,5 +61,5 @@ def testClassMap(width = 800, height = 600):
         pygame.display.flip()
     pygame.quit()  
 
-testClassMap()
+testClassMap(600,600)
             
