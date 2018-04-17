@@ -1,6 +1,7 @@
 import socket, queue, threading
 import pygame
 import classGameMap
+import os
 
 def handle_server_msgs(server, msgs_q, bufsize=16):
     server.setblocking(True)
@@ -17,6 +18,8 @@ def runMoles(server, msgs_q, gm, width, height):
     pygame.init()
     screen=pygame.display.set_mode([width,height])
     myfont = pygame.font.SysFont('Comic Sans MS', 30)
+    moleImage = pygame.image.load(os.path.join('Graphic', 'MoleUp.png'))
+    moleImage = pygame.transform.scale(moleImage, (gm.tileSize,gm.tileSize))
     done = False
     clock = pygame.time.Clock()
     timer = 0
@@ -40,7 +43,7 @@ def runMoles(server, msgs_q, gm, width, height):
                     server.send(("%d,%d\n"%pos).encode())
 
         timer += 1
-        if timer % 8 == 0:
+        if timer % 12 == 0:
             server.send(("%d,%d\n"%(-gm.width,-gm.height)).encode())
 
         if not done:
@@ -64,7 +67,8 @@ def runMoles(server, msgs_q, gm, width, height):
 
                 for playerID in gm.moles:
                     x, y= gm.moles[playerID]
-                    pygame.draw.circle(screen, (255,0,0), [x,y], 20)
+                    #pygame.draw.circle(screen, (255,0,0), [x,y], 20)
+                    screen.blit(moleImage, [x,y])
                     textsurface = myfont.render(str(playerID), False, (0, 0, 0))
                     screen.blit(textsurface,(x,y))
 

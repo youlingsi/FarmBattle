@@ -18,10 +18,6 @@ class gameMap(object):
         # value is true or false
         # true = field tile; false = grass tile
         self.map = {}
-        # randomly generate the map
-        for x in range(self.mpSize[0]):
-            for y in range(self.mpSize[1]):
-                self.map[(x,y)] = random.randint(0,1)
         # score of the farmer(s)
         self.scoreF = 0
         # score of the moles
@@ -32,11 +28,17 @@ class gameMap(object):
         # backgroung color
         self.BGcolor = (20,50,20)
         # color of the fonts
-        self.fontColor = (160,160,150)
+        self.fontColor = (255,231,53)
         # size of the fonts
         self.fontSize = int(self.tileSize * 0.8)
         # font name
         self.fontName = 'Comic Sans MS'
+
+    def mapGenerater(self):
+        # randomly generate the map
+        for x in range(self.mpSize[0]):
+            for y in range(self.mpSize[1]):
+                self.map[(x,y)] = random.randint(0,1)
 
     # convert the position to be fiting in the closest tile
     def converPOS(self, pos):
