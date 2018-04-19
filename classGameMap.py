@@ -73,6 +73,13 @@ class gameMap(object):
             seconds = "0" + seconds
         return "%s : %s" %(minutes, seconds)
 
+    def mapRepre(self):
+        stats = [[],[]]
+        for t in self.map:
+            stats[self.map[t]].append(t)
+        assert(len(stats[0])+len(stats[1]) == len(self.map))
+        return repr(stats)
+
     @staticmethod
     def getPosCentered(sideLen, surface, direction):
         if direction == "x":

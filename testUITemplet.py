@@ -39,6 +39,7 @@ def drawUI(width, height, screen, gm, myfont):
 def testClassMap(width = 800, height = 600):
     gm = classGameMap.gameMap(width, height,8)
     gm.mapGenerater()
+    print(gm.mapRepre())
     pygame.init()
     screen=pygame.display.set_mode([width,height])
     grass = pygame.image.load(os.path.join('Graphic', 'Grass.png'))

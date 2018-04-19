@@ -14,12 +14,77 @@ def handle_server_msgs(server, msgs_q, bufsize=16):
             msg_stream = msg_stream[newline_index + 1 :]
             msgs_q.put(ready_msg)
 
-def runMoles(server, msgs_q, gm, width, height):
+# converte the string represnt of a tuple with two int to real tuple
+def tupleFromMSG(s):
+    s = s.strip()[1:].split(",")
+    return (int(s[0]), int(s[1]))
+
+
+def loadMap(strMap, gm):
+    s = strMap[2:-2].split("], [")
+    lstFalse = s[0][:-1].split("), ")
+    lstTrue = s[1][:-1].split("),")
+    count = 0
+    countT = 0
+    countF = 0
+    for tF in lstFalse:
+        count +=1
+        countF += 1
+        gm.map[tupleFromMSG(tF)] = 0
+    for tT in lstTrue:
+        count += 1
+        countT += 1
+        gm.map[tupleFromMSG(tT)] = 1
+
+
+def drawMap(screen,field, grass, gm):
+    count = 0 
+    for tile in gm.map:
+        if gm.map[tile] == 1:
+            screen.blit(field, gm.indexToPos(tile))
+            count +=1
+        else:
+            screen.blit(grass, gm.indexToPos(tile))
+            count +=1
+
+def drawUI(width, height, screen, gm, myfont):
+    sFarmer = myfont.render("Farmer", False, gm.fontColor)
+    sMole = myfont.render("Moles", False, gm.fontColor)
+    sTime = myfont.render("Time Left", False, gm.fontColor) 
+    farmerScore = myfont.render(str(gm.scoreF), False, gm.fontColor)
+    moleScore = myfont.render(str(gm.scoreM), False, gm.fontColor)
+    time = myfont.render(gm.getTime(), False, gm.fontColor)               
+    sFarmPos = (gm.origin[0] + gm.getPosCentered(width/3, sFarmer, "x"), 
+            gm.height+gm.getPosCentered(height*0.15/2, sFarmer, "y"))
+    sMolePos = (gm.origin[0] + width/ 3*2 + gm.getPosCentered(width/3, sMole, "x"), 
+            gm.height+gm.getPosCentered(height*0.15/2, sMole, "y"))
+    sTimePos = (gm.origin[0] + width/ 3 + gm.getPosCentered(width/3, sTime, "x"), 
+            gm.height+gm.getPosCentered(height*0.15/2, sTime, "y"))
+    farmPos = (gm.origin[0] + gm.getPosCentered(width/3, farmerScore, "x"), 
+            gm.height+height*0.15/2+gm.getPosCentered(height*0.15/2, farmerScore, "y"))
+    molePos = (gm.origin[0] + width/ 3*2 + gm.getPosCentered(width/3, moleScore, "x"), 
+            gm.height+height*0.15/2+gm.getPosCentered(height*0.15/2, moleScore, "y"))
+    timePos = (gm.origin[0] + width/ 3 + gm.getPosCentered(width/3, time, "x"), 
+            gm.height+height*0.15/2+gm.getPosCentered(height*0.15/2, time, "y"))
+    screen.blit(sFarmer,sFarmPos)
+    screen.blit(sMole,sMolePos)
+    screen.blit(sTime,sTimePos)
+    screen.blit(farmerScore,farmPos)
+    screen.blit(moleScore,molePos)
+    screen.blit(time,timePos)
+
+        
+def run(server, msgs_q, gm, width, height, role):
     pygame.init()
     screen=pygame.display.set_mode([width,height])
-    myfont = pygame.font.SysFont('Comic Sans MS', 30)
     moleImage = pygame.image.load(os.path.join('Graphic', 'MoleUp.png'))
     moleImage = pygame.transform.scale(moleImage, (gm.tileSize,gm.tileSize))
+    grass = pygame.image.load(os.path.join('Graphic', 'Grass.png'))
+    grass = pygame.transform.scale(grass, (gm.tileSize,gm.tileSize))
+    field = pygame.image.load(os.path.join('Graphic', 'Field.png'))
+    field = pygame.transform.scale(field, (gm.tileSize,gm.tileSize))
+    myfont = pygame.font.SysFont(gm.fontName, gm.fontSize)
+
     done = False
     clock = pygame.time.Clock()
     timer = 0
@@ -35,12 +100,13 @@ def runMoles(server, msgs_q, gm, width, height):
             if event.type == pygame.QUIT: # If user clicked close
                 done = True
                 pygame.quit()         
-            elif event.type == pygame.MOUSEBUTTONUP:
+            elif (role == 1 and event.type == pygame.MOUSEBUTTONUP):
                 pos = pygame.mouse.get_pos()
                 if (pos[0] > 0 and pos[0] < gm.width
                     and pos[1] > 0 and pos[1] < gm.width):
                     timer = 0
-                    server.send(("%d,%d\n"%pos).encode())
+                    if gm.isValidTile(pos):
+                        server.send(("%d,%d\n"%pos).encode())
 
         timer += 1
         if timer % 12 == 0:
@@ -48,7 +114,7 @@ def runMoles(server, msgs_q, gm, width, height):
 
         if not done:
             # Clear the screen and set the screen background
-            screen.fill((0,255,0))
+            screen.fill(gm.BGcolor)
 
             if msgs_q.qsize() > 0:
                 msg = msgs_q.get()
@@ -58,6 +124,8 @@ def runMoles(server, msgs_q, gm, width, height):
                     msg.startswith('myid')):
                     newID = msg.split()[1]
                     gm.moles[newID] = (-gm.width, -gm.height)
+                elif (msg.strip().startswith("!")):
+                    loadMap(msg.strip()[1:], gm)
                 else:
                     infoList = msg.split()
                     thatID = infoList[0]
@@ -65,12 +133,14 @@ def runMoles(server, msgs_q, gm, width, height):
                     y = int(infoList[2])
                     gm.moles[thatID] = (x,y)
 
+                drawMap(screen,field,grass,gm)
+                drawUI(width,height,screen,gm,myfont)
+                
                 for playerID in gm.moles:
-                    x, y= gm.moles[playerID]
-                    #pygame.draw.circle(screen, (255,0,0), [x,y], 20)
-                    screen.blit(moleImage, [x,y])
+                    mPos = gm.converPOS(gm.moles[playerID])
+                    screen.blit(moleImage, mPos)
                     textsurface = myfont.render(str(playerID), False, (0, 0, 0))
-                    screen.blit(textsurface,(x,y))
+                    screen.blit(textsurface,mPos)
 
     
                 # Go ahead and update the screen with what we've drawn.
@@ -79,72 +149,6 @@ def runMoles(server, msgs_q, gm, width, height):
     
     # Be IDLE friendly
     pygame.quit()
-
-def runFarmer(server, msgs_q, gm, width,height):
-    pygame.init()
-    screen=pygame.display.set_mode([width,height])
-    myfont = pygame.font.SysFont('Comic Sans MS', 30)
-    done = False
-    clock = pygame.time.Clock()
-    timer = 0
-
-    while not done:
-    
-        # This limits the while loop to a max of 10 times per second.
-        # Leave this out and we will use all CPU we can.
-        clock.tick(10)
-
-        for event in pygame.event.get(): # User did something
-            if event.type == pygame.QUIT: # If user clicked close
-                done = True
-                pygame.quit()         
-            elif event.type == pygame.MOUSEBUTTONUP:
-                pos = pygame.mouse.get_pos()
-                if (pos[0] > 0 and pos[0] < gm.width
-                    and pos[1] > 0 and pos[1] < gm.width):
-                    for m in gm.moles:
-                        if (pos[0] - m[0] <= gm.tileSize
-                            and pos[1]-m[1] <= gm.tileSize):
-                                server.send(("%d,%d\n"%(-gm.width, -gm.height)).encode())
-
-#=========Need alteration=====================
-        timer += 1
-        if timer % 8 == 0:
-            server.send(("%d,%d\n"%(-gm.width,-gm.height)).encode())
-
-        if not done:
-            # Clear the screen and set the screen background
-            screen.fill((0,255,0))
-
-            if msgs_q.qsize() > 0:
-                msg = msgs_q.get()
-                msgs_q.task_done()
-                if (msg.startswith('newconn') or
-                    msg.startswith('existingconn') or
-                    msg.startswith('myid')):
-                    newID = msg.split()[1]
-                    gm.moles[newID] = (-gm.width, -gm.height)
-                else:
-                    infoList = msg.split()
-                    thatID = infoList[0]
-                    x = int(infoList[1])
-                    y = int(infoList[2])
-                    gm.moles[thatID] = (x,y)
-
-                for playerID in gm.moles:
-                    x, y= gm.moles[playerID]
-                    pygame.draw.circle(screen, (255,0,0), [x,y], 20)
-                    textsurface = myfont.render(str(playerID), False, (0, 0, 0))
-                    screen.blit(textsurface,(x,y))
-
-    
-                # Go ahead and update the screen with what we've drawn.
-                # This MUST happen after all the other drawing commands.
-                pygame.display.flip()
-    pygame.quit()
-#=============Need alteration=================================
-
-
 
 
 def play(width = 800, height = 600):
@@ -161,8 +165,9 @@ def play(width = 800, height = 600):
 
     gm = classGameMap.gameMap(width,height)
 
-    runMoles(server, msgs_q, gm, width,height)
-    runFarmer(server, msgs_q, gm, width,height)
+    role = int(input("0=Farmer; 1 = moles"))
+
+    run(server, msgs_q, gm, width,height, role)
 
 if __name__ == '__main__':
     play()

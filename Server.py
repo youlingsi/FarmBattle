@@ -1,4 +1,5 @@
 import socket, queue, threading
+import classGameMap
 
 
 
@@ -52,8 +53,9 @@ def play(width = 800, height = 600):
     server.bind((HOST, PORT))
     server.listen()
 
-    # initiate the map
-    #gm = classGameMap.gameMap(width, height)
+    #initiate the map
+    gm = classGameMap.gameMap(width, height)
+    gm.mapGenerater()
 # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     # {str ID: [float x, float y]}
     players = dict()
@@ -71,7 +73,7 @@ def play(width = 800, height = 600):
         newCY = -height
         players[new_client_ID] = [newCX, newCY]
         # constructs the initialization message to be sent to all
-        newConnInit = '%s %d %d\n ' % (new_client_ID, newCX, newCY)
+        newConnInit = '%s %d %d \n ' % (new_client_ID, newCX, newCY)
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         # constructs the message to be sent to all existing connections
         new_conn_msg = 'newconn %s\n' % new_client_ID
@@ -94,13 +96,12 @@ def play(width = 800, height = 600):
 # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         # sends init message
         new_client_conn.send(newConnInit.encode())
+        # sends init map
+        new_client_conn.send(("!%s\n" % gm.mapRepre()).encode())
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        try:
-            threading.Thread(target=handle_client,
+        threading.Thread(target=handle_client,
                          args=(new_client_conn, msg_q, new_client_ID,
                                clientele)).start()
-        except:
-            break
 
 if __name__ == '__main__':
     play()
