@@ -1,8 +1,18 @@
 import socket, queue, threading
 import pygame
 import classGameMap
+import classMoles
 import os
 
+# decode the info receved from the server and put it into a message queue
+# From:
+
+###################################
+#       Socket Server Demo        #
+#         by Rohan Varma          #
+#      adapted by Kyle Chin       #
+# further adapted by Matthew Kong #
+###################################
 def handle_server_msgs(server, msgs_q, bufsize=16):
     server.setblocking(True)
     msg_stream = ''
@@ -19,7 +29,7 @@ def tupleFromMSG(s):
     s = s.strip()[1:].split(",")
     return (int(s[0]), int(s[1]))
 
-
+# load the mapInfo sent from the server into the client game map
 def loadMap(strMap, gm):
     s = strMap[2:-2].split("], [")
     lstFalse = s[0][:-1].split("), ")
@@ -36,17 +46,26 @@ def loadMap(strMap, gm):
         countT += 1
         gm.map[tupleFromMSG(tT)] = 1
 
+def updateGame(strState, gm):
+    s = strState.strip()[1:].split(",")
+    gm.gameState = int(s[0])
+    gm.time = int(s[1])
+    gm.scoreF = int(s[2])
+    gm.scoreM = int(s[3])
+    if gm.gameState == 1:
+        print("end")
 
+# draw the base map
 def drawMap(screen,field, grass, gm):
-    count = 0 
+    # Clear the screen and set the screen background
+    screen.fill(gm.BGcolor)
     for tile in gm.map:
         if gm.map[tile] == 1:
             screen.blit(field, gm.indexToPos(tile))
-            count +=1
         else:
             screen.blit(grass, gm.indexToPos(tile))
-            count +=1
 
+# draw the UI Element Including the scores, the time left 
 def drawUI(width, height, screen, gm, myfont):
     sFarmer = myfont.render("Farmer", False, gm.fontColor)
     sMole = myfont.render("Moles", False, gm.fontColor)
@@ -73,7 +92,7 @@ def drawUI(width, height, screen, gm, myfont):
     screen.blit(moleScore,molePos)
     screen.blit(time,timePos)
 
-        
+# run the game        
 def run(server, msgs_q, gm, width, height, role):
     pygame.init()
     screen=pygame.display.set_mode([width,height])
@@ -94,28 +113,22 @@ def run(server, msgs_q, gm, width, height, role):
     
         # This limits the while loop to a max of 10 times per second.
         # Leave this out and we will use all CPU we can.
-        clock.tick(10)
+        clock.tick(30)
+
+        timer += 1
+        if timer % 30 == 0:
+            server.send("update\n".encode())
 
         for event in pygame.event.get(): # User did something
             if event.type == pygame.QUIT: # If user clicked close
                 done = True
                 pygame.quit()         
-            elif (role == 1 and event.type == pygame.MOUSEBUTTONUP):
-                pos = pygame.mouse.get_pos()
+            elif event.type == pygame.MOUSEBUTTONUP:
+                pos = gm.convertPOS(pygame.mouse.get_pos())
                 if (pos[0] > 0 and pos[0] < gm.width
                     and pos[1] > 0 and pos[1] < gm.width):
-                    timer = 0
-                    if gm.isValidTile(pos):
-                        server.send(("%d,%d\n"%pos).encode())
-
-        timer += 1
-        if timer % 12 == 0:
-            server.send(("%d,%d\n"%(-gm.width,-gm.height)).encode())
-
+                    server.send(("%d %d %d\n"%(pos[0], pos[1],role)).encode())
         if not done:
-            # Clear the screen and set the screen background
-            screen.fill(gm.BGcolor)
-
             if msgs_q.qsize() > 0:
                 msg = msgs_q.get()
                 msgs_q.task_done()
@@ -123,25 +136,36 @@ def run(server, msgs_q, gm, width, height, role):
                     msg.startswith('existingconn') or
                     msg.startswith('myid')):
                     newID = msg.split()[1]
-                    gm.moles[newID] = (-gm.width, -gm.height)
+                    gm.moles[newID] = ""
                 elif (msg.strip().startswith("!")):
                     loadMap(msg.strip()[1:], gm)
+                elif (msg.strip().startswith("?")):
+                    updateGame(msg.strip(), gm)
                 else:
-                    infoList = msg.split()
-                    thatID = infoList[0]
-                    x = int(infoList[1])
-                    y = int(infoList[2])
-                    gm.moles[thatID] = (x,y)
+                    infoList = msg.split("+")
+                    thatID = int(infoList[0])
+                    gm.moles[thatID]=classMoles.Moles.decodeMole(infoList[1])
 
                 drawMap(screen,field,grass,gm)
                 drawUI(width,height,screen,gm,myfont)
                 
-                for playerID in gm.moles:
-                    mPos = gm.converPOS(gm.moles[playerID])
-                    screen.blit(moleImage, mPos)
-                    textsurface = myfont.render(str(playerID), False, (0, 0, 0))
-                    screen.blit(textsurface,mPos)
-
+                # draw all moles
+                for cID in gm.moles:
+                    try:
+                        mState = gm.moles[cID][0]
+                        mPos = gm.moles[cID][1]
+                        for i in range(len(mState)):
+                            pos = mPos[i]
+                            if mState[i] > 0:
+                                screen.blit(moleImage, pos)
+                                textsurface = myfont.render(str(cID)+"I", False, (0, 0, 0))
+                                screen.blit(textsurface,pos)
+                            elif mState[i] < 0:
+                                screen.blit(moleImage, pos)
+                                textsurface = myfont.render(str(cID)+"D", False, (0, 0, 0))
+                                screen.blit(textsurface,pos)
+                    except:
+                        continue
     
                 # Go ahead and update the screen with what we've drawn.
                 # This MUST happen after all the other drawing commands.
@@ -164,6 +188,7 @@ def play(width = 800, height = 600):
     threading.Thread(target=handle_server_msgs, args=(server, msgs_q)).start()
 
     gm = classGameMap.gameMap(width,height)
+    #mole = classMoles.Moles()
 
     role = int(input("0=Farmer; 1 = moles"))
 

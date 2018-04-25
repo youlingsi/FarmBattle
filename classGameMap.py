@@ -1,6 +1,7 @@
 import random
 class gameMap(object):
     def __init__(self, width, height, tNum = 9, time = 120):
+        self.gameState = 0 #0-game on, -1-openging, 1-ending
         self.width = width
         # exclude the size of the UI banner a the bottom
         # banner is 10% height of the screen andthe full width of the screen
@@ -12,11 +13,11 @@ class gameMap(object):
                     (self.height%self.tileSize)//2)
         # the map is a rectangle grid map
         self.mpSize = (int(self.width//self.tileSize), int(self.height//self.tileSize))
-        self.moles = {} # to move to Moles class
+        self.moles = {} 
         # dict of the map
         # key is the tuple of the index
-        # value is true or false
-        # true = field tile; false = grass tile
+        # values are : 0, 1, 2
+        # 1 = field tile; 0 = grass tile; 2 = ocupied
         self.map = {}
         # score of the farmer(s)
         self.scoreF = 0
@@ -41,7 +42,7 @@ class gameMap(object):
                 self.map[(x,y)] = random.randint(0,1)
 
     # convert the position to be fiting in the closest tile
-    def converPOS(self, pos):
+    def convertPOS(self, pos):
         index = self.posToIndex(pos)
         return self.indexToPos(index)
 
@@ -58,15 +59,27 @@ class gameMap(object):
         return (x,y)
 
     # check if the tile is a field tile that a mole can show
+    # works only for the sever
     def isValidTile(self, pos):
-        index = self.posToIndex(pos)
-        return self.map[index] == 1
+        if (pos[0] >= self.origin[0] and pos[0] <= self.width - self.origin[0]
+            and pos[1] >= self.origin[1] and pos[1] <= self.height-self.origin[1]):        
+            index = self.posToIndex(pos)
+            if self.map[index] == 1:
+                for mole in self.moles:
+                    try:
+                        for p in self.moles[mole].pos:
+                            if pos == p:
+                                return False
+                    except:
+                        continue
+                return True
+        return False
 
     # convert the time to formated string
     # assume the longest time for a game is less than a hour
     def getTime(self):
-        minutes = str(self.time//60)
-        seconds = str(self.time%60)
+        minutes = str(int(self.time)//60)
+        seconds = str(int(self.time)%60)
         if len(minutes) < 2:
             minutes = "0" + minutes
         if len(seconds) < 2:
