@@ -37,14 +37,12 @@ class Moles(object):
             # when the mole is out, -1
             if self.states[i] > 0:
                 self.states[i] -= 1
-                print(i, self.states[i])
                 if self.states[i] == 0:
                     self.pos[i] = (-1,-1)
                     succesCount += 1
             # when the mole is dazzle +1
             elif self.states[i] < 0:
                 self.states[i] += 1
-                print(i, self.states[i])
                 if self.states[i] == 0:
                     self.pos[i] = (-1,-1)
         return succesCount
