@@ -19,7 +19,10 @@ gamestate = -1
 def clickCheck(surf, surPos, pos):
     rec = surf.get_rect()
     rec = rec.move(surPos)
+<<<<<<< HEAD
     print("Collide", rec.collidepoint(pos))
+=======
+>>>>>>> 5039ed1261ecaad475738703d0384ace26f87944
     return rec.collidepoint(pos)
 
 # Calculate the positions and construct the opening Scene
@@ -37,6 +40,10 @@ def constructOpening(screen, opSce,mole, farmer):
     opSce.allElement["sFAIOff"] = opSce.allElement["fSelection"].render(opSce.sFAIOff, False, opSce.fontColor)
     opSce.allElement["mole"] = mole
     opSce.allElement["farmer"] = farmer
+<<<<<<< HEAD
+=======
+    opSce.allElement["sLoading"] = opSce.allElement["fSelection"].render(opSce.loading, False, opSce.fontColor)
+>>>>>>> 5039ed1261ecaad475738703d0384ace26f87944
     # define all positions
     opSce.allElement["sTitlePos"] = (classGameMap.gameMap.getPosCentered(opSce.width,opSce.allElement["sTitle"],"x"), 
                 opSce.height//4)
@@ -58,6 +65,11 @@ def constructOpening(screen, opSce,mole, farmer):
     opSce.allElement["sFAIOffPos"]=(opSce.width // 2 + 
                 classGameMap.gameMap.getPosCentered(opSce.width//2,opSce.allElement["sFAIOff"],"x"), 
                 opSce.height//5*3)
+<<<<<<< HEAD
+=======
+    opSce.allElement["sLoadingPos"] = (classGameMap.gameMap.getPosCentered(opSce.width,opSce.allElement["sLoading"],"x"), 
+                opSce.height//2)
+>>>>>>> 5039ed1261ecaad475738703d0384ace26f87944
 
 def drawOpening(screen, opSce):
     screen.fill(opSce.BGcolor)
@@ -76,7 +88,11 @@ def drawOpening(screen, opSce):
             rec = opSce.allElement["mole"].get_rect()
             rec = rec.move(opSce.allElement["molePos"])
             pygame.draw.rect(screen, RED, rec, 2)
+<<<<<<< HEAD
     elif opSce.selectionStage >= 1:
+=======
+    elif opSce.selectionStage >= 1 and opSce.selectionStage < 3:
+>>>>>>> 5039ed1261ecaad475738703d0384ace26f87944
         screen.blit(opSce.allElement["sOpt2"],opSce.allElement["sOpt1Pos"])
         screen.blit(opSce.allElement["sMAIOn"],opSce.allElement["sMAIOnPos"])
         screen.blit(opSce.allElement["sMAIOff"],opSce.allElement["sMAIOffPos"])
@@ -98,6 +114,11 @@ def drawOpening(screen, opSce):
             rec = opSce.allElement["sFAIOff"].get_rect()
             rec = rec.move(opSce.allElement["sFAIOffPos"])
             pygame.draw.rect(screen, RED, rec, 2)
+<<<<<<< HEAD
+=======
+    else:
+        screen.blit(opSce.allElement["sLoading"], opSce.allElement["sLoadingPos"])
+>>>>>>> 5039ed1261ecaad475738703d0384ace26f87944
 
 
 def testMain(screen,opSce,mole, farmer, gamestate):
@@ -119,6 +140,10 @@ def testMain(screen,opSce,mole, farmer, gamestate):
                             server.send(("%d %d %d %s\n"%(pos[0], pos[1],gm.playerRole,"Pl")).encode())
                 """
                 if gamestate == -1:
+<<<<<<< HEAD
+=======
+                    # keyboard suport for selecting the roles and AIs
+>>>>>>> 5039ed1261ecaad475738703d0384ace26f87944
                     if event.type == pygame.KEYUP:
                         if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
                             if opSce.selectionStage == 0:
@@ -128,6 +153,7 @@ def testMain(screen,opSce,mole, farmer, gamestate):
                             elif opSce.selectionStage == 2:
                                 opSce.mAIon = not opSce.mAIon
                         if event.key == pygame.K_RETURN:
+<<<<<<< HEAD
                             if opSce.selectionStage == 2:
                                 gamestate += 1
                                 opSce.selectionStage = 0
@@ -137,6 +163,16 @@ def testMain(screen,opSce,mole, farmer, gamestate):
                             opSce.selectionStage -= 1
                     elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                         print("Stage", opSce.selectionStage)
+=======
+                            if opSce.selectionStage < 3:
+                                opSce.selectionStage += 1
+                        elif (event.key == pygame.K_ESCAPE 
+                                and opSce.selectionStage > 0
+                                and opSce.selectionStage < 3):
+                            opSce.selectionStage -= 1
+                    # mouse click support for selecting roles and the AIs
+                    elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+>>>>>>> 5039ed1261ecaad475738703d0384ace26f87944
                         mousePos = pygame.mouse.get_pos()
                         if opSce.selectionStage == 0:
                             if clickCheck(opSce.allElement["mole"], opSce.allElement["molePos"],mousePos):
@@ -148,20 +184,33 @@ def testMain(screen,opSce,mole, farmer, gamestate):
                         elif opSce.selectionStage == 2:
                             if clickCheck(opSce.allElement["sMAIOn"],opSce.allElement["sMAIOnPos"],mousePos):
                                 opSce.mAIon = True
+<<<<<<< HEAD
                                 gamestate +=1
                             elif clickCheck(opSce.allElement["sMAIOff"],opSce.allElement["sMAIOffPos"],mousePos):
                                 opSce.mAIon = False
                                 gamestate +=1
+=======
+                                opSce.selectionStage += 1
+                            elif clickCheck(opSce.allElement["sMAIOff"],opSce.allElement["sMAIOffPos"],mousePos):
+                                opSce.mAIon = False
+                                opSce.selectionStage += 1
+>>>>>>> 5039ed1261ecaad475738703d0384ace26f87944
                         elif opSce.selectionStage == 1:
                             if clickCheck(opSce.allElement["sFAIOn"],opSce.allElement["sFAIOnPos"],mousePos):
                                 opSce.fAIon = True
                                 opSce.selectionStage +=1
                             elif clickCheck(opSce.allElement["sFAIOff"],opSce.allElement["sFAIOffPos"],mousePos):
                                 opSce.fAIon = False
+<<<<<<< HEAD
                                 opSce.selectionStage +=1
                                                            
                     elif event.type == pygame.MOUSEBUTTONUP and event.button == 3:
                         if opSce.selectionStage > 0:
+=======
+                                opSce.selectionStage +=1                                                           
+                    elif event.type == pygame.MOUSEBUTTONUP and event.button == 3:
+                        if opSce.selectionStage > 0 and opSce.selectionStage < 3:
+>>>>>>> 5039ed1261ecaad475738703d0384ace26f87944
                             opSce.selectionStage -=1
                             
 

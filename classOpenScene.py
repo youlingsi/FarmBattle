@@ -21,10 +21,19 @@ class OpenScene(object):
         self.opt2 = "Turn AI on/off"
         self.sMAIOn = "Mole AI On"
         self.sMAIOff = "Mole AI Off"
+<<<<<<< HEAD
+=======
+        # Selection 3
+>>>>>>> 5039ed1261ecaad475738703d0384ace26f87944
         self.sFAIOn = "Farmer AI On"
         self.sFAIOff = "Farmer AI Off"
         self.mAIon = False # mole AI switch
         self.fAIon = False # farmer AI switch
+<<<<<<< HEAD
+=======
+        # Selection 4: Loading
+        self.loading = "LOADING"
+>>>>>>> 5039ed1261ecaad475738703d0384ace26f87944
         # properties of all the elements
         self.allElement = {}
 
