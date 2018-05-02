@@ -1,10 +1,14 @@
 import random
 class gameMap(object):
     def __init__(self, width, height, tNum = 9, time = 120):
+<<<<<<< HEAD
         self.gameState = -1 #0-game on, -1-openging, 1-ending
         self.playerRole = 1 #0-farmer, 1-mole
         self.mAIOn = False  #whether turn on the mole AI
         self.fAIOn = False  #whether turn on the farmer AI
+=======
+        self.gameState = 0 #0-game on, -1-openging, 1-ending
+>>>>>>> parent of 709ab4b... TP2 alter Submission
         self.width = width
         # exclude the size of the UI banner a the bottom
         # banner is 10% height of the screen andthe full width of the screen

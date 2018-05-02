@@ -3,6 +3,7 @@ import pygame
 import classGameMap
 import classMoles
 import os
+import ClassMolePopAni
 import random
 import classOpenScene
 
@@ -152,6 +153,11 @@ def updateGame(strState, gm):
     gm.time = int(s[1])
     gm.scoreF = int(s[2])
     gm.scoreM = int(s[3])
+<<<<<<< HEAD
+=======
+    if gm.gameState == 1:
+        print("end")
+>>>>>>> parent of 709ab4b... TP2 alter Submission
 
 # draw the base map
 def drawMap(screen,field, grass, gm):
@@ -217,7 +223,7 @@ def moleAI(gm,server):
         x = random.randint(gm.origin[0],gm.width-gm.origin[0])
         y = random.randint(gm.origin[1],gm.height-gm.origin[1])
         pos = gm.convertPOS((x,y))
-        server.send(("%d %d %d %s\n"%(pos[0], pos[1],1,"AI")).encode())
+        server.send(("%d %d %d\n"%(pos[0], pos[1],1)).encode())
 
 ## AI of the Farmer
 def farmerAI(gm, server):
@@ -229,7 +235,7 @@ def farmerAI(gm, server):
             mPos = gm.moles[keyList[i]][1]
             pos = mPos[random.randint(0,len(mPos)-1)]
             print(pos)
-            server.send(("%d %d %d %s\n"%(pos[0], pos[1],0,"AI")).encode())
+            server.send(("%d %d %d\n"%(pos[0], pos[1],0)).encode())
         except:
             pass
 
@@ -238,9 +244,7 @@ def farmerAI(gm, server):
 # run the game        
 def run(server, msgs_q, opSce, gm, width, height):
     pygame.init()
-    # create game screen
     screen=pygame.display.set_mode([width,height])
-    # load images
     moleImage = pygame.image.load(os.path.join('Graphic', 'MoleUp.png'))
     moleImage = pygame.transform.scale(moleImage, (gm.tileSize,gm.tileSize))
     # Load ground tiles
@@ -250,12 +254,17 @@ def run(server, msgs_q, opSce, gm, width, height):
     field = pygame.transform.scale(field, (gm.tileSize,gm.tileSize))
     # load sprite sheet
     moleSheet = pygame.image.load(os.path.join('Graphic', 'MoleUp.png'))
+<<<<<<< HEAD
     #moleAni = ClassMolePopAni.MolePop(moleSheet,(64,64))
     farmerSheet = pygame.image.load(os.path.join('Graphic', 'MoleUp.png'))
     # define Fonts
     myfont = pygame.font.SysFont(gm.fontName, gm.fontSize)
     constructOpening(screen,opSce,moleImage,moleImage)
     
+=======
+    moleAni = ClassMolePopAni.MolePop(moleSheet,(64,64))
+
+>>>>>>> parent of 709ab4b... TP2 alter Submission
     done = False
     clock = pygame.time.Clock()
     timer = 0
@@ -274,6 +283,7 @@ def run(server, msgs_q, opSce, gm, width, height):
         for event in pygame.event.get(): # User did something
             if event.type == pygame.QUIT: # If user clicked close
                 done = True
+<<<<<<< HEAD
                 pygame.quit()
             else:
                 if gm.gameState == 0:       
@@ -330,6 +340,14 @@ def run(server, msgs_q, opSce, gm, width, height):
                         if opSce.selectionStage > 0 and opSce.selectionStage < 3:
                             opSce.selectionStage -=1
 
+=======
+                pygame.quit()         
+            elif event.type == pygame.MOUSEBUTTONUP:
+                pos = gm.convertPOS(pygame.mouse.get_pos())
+                if (pos[0] > 0 and pos[0] < gm.width
+                    and pos[1] > 0 and pos[1] < gm.width):
+                    server.send(("%d %d %d\n"%(pos[0], pos[1],role)).encode())
+>>>>>>> parent of 709ab4b... TP2 alter Submission
 
         if not done:
             if msgs_q.qsize() > 0:
@@ -340,15 +358,16 @@ def run(server, msgs_q, opSce, gm, width, height):
                     msg.startswith('myid')):
                     newID = msg.split()[1]
                     gm.moles[newID] = ""
-                elif (msg.strip().startswith("?")):
-                    updateGame(msg.strip(), gm)
                 elif (msg.strip().startswith("!")):
                     loadMap(msg.strip()[1:], gm)
+                elif (msg.strip().startswith("?")):
+                    updateGame(msg.strip(), gm)
                 else:
                     infoList = msg.split("+")
                     thatID = int(infoList[0])
                     gm.moles[thatID]=classMoles.Moles.decodeMole(infoList[1])
 
+<<<<<<< HEAD
                 if gm.gameState == 0:
                     # AI generate moles and farmers
                     if timer % 10 == 0 and gm.mAIOn:
@@ -380,6 +399,29 @@ def run(server, msgs_q, opSce, gm, width, height):
                     drawOpening(screen,opSce)
                 elif gm.gameState == 1:
                     drawEnding(width,height,screen,gm,myfont)
+=======
+                drawMap(screen,field,grass,gm)
+                drawUI(width,height,screen,gm,myfont)
+                
+                # draw all moles
+                for cID in gm.moles:
+                    try:
+                        mState = gm.moles[cID][0]
+                        mPos = gm.moles[cID][1]
+                        for i in range(len(mState)):
+                            pos = mPos[i]
+                            if mState[i] > 0:
+                                screen.blit(moleImage, pos)
+                                textsurface = myfont.render(str(cID)+"I", False, (0, 0, 0))
+                                screen.blit(textsurface,pos)
+                            elif mState[i] < 0:
+                                moleAni.moleSinkAni(screen,pos)
+                                screen.blit(moleImage, pos)
+                                textsurface = myfont.render(str(cID)+"D", False, (0, 0, 0))
+                                screen.blit(textsurface,pos)
+                    except:
+                        continue
+>>>>>>> parent of 709ab4b... TP2 alter Submission
     
                 # Go ahead and update the screen with what we've drawn.
                 # This MUST happen after all the other drawing commands.

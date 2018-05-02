@@ -90,11 +90,12 @@ def play(width = 800, height = 600):
 
     
 # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    #players = dict()
     threading.Thread(target=server_thread,
                      args=(clientele, msg_q, gm)).start()
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     while True:
-        print("new Client")
+
         (new_client_conn, address) = server.accept()
         # assigns unique ID
         new_client_ID = str(num_conns)
@@ -103,7 +104,7 @@ def play(width = 800, height = 600):
         # generates random initial states
         #moleShow = random.randint(1,2)
         moleShow = 5
-        moleNum = 3
+        moleNum = 2
         gm.moles[new_client_ID] = classMoles.Moles(moleShow,moleNum)
         reprMole = gm.moles[new_client_ID].__repr__()
         # constructs the initialization message to be sent to all
