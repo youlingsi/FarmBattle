@@ -4,6 +4,7 @@ import classGameMap
 import classMoles
 import os
 import random
+import classOpenScene
 
 # decode the info receved from the server and put it into a message queue
 # From:
@@ -97,6 +98,10 @@ def drawUI(width, height, screen, gm, myfont):
     screen.blit(moleScore,molePos)
     screen.blit(time,timePos)
 
+# Draw the Opening scene:
+def drawOpen(screen,farmer, mole, myfont, gm):
+    screen.fill(gm.BGcolor)
+
 ##AI of the moles. spawn a mole 
 def moleAI(gm,server):
     toSpawn = random.randint(0,1)
@@ -121,21 +126,27 @@ def farmerAI(gm, server):
 
 
 # run the game        
-def run(server, msgs_q, gm, width, height, role, mAI, fAI):
+def run(server, msgs_q, gm, width, height):
     pygame.init()
     # create game screen
     screen=pygame.display.set_mode([width,height])
     # load images
     moleImage = pygame.image.load(os.path.join('Graphic', 'MoleUp.png'))
     moleImage = pygame.transform.scale(moleImage, (gm.tileSize,gm.tileSize))
+    # Load ground tiles
     grass = pygame.image.load(os.path.join('Graphic', 'Grass.png'))
     grass = pygame.transform.scale(grass, (gm.tileSize,gm.tileSize))
     field = pygame.image.load(os.path.join('Graphic', 'Field.png'))
     field = pygame.transform.scale(field, (gm.tileSize,gm.tileSize))
-    myfont = pygame.font.SysFont(gm.fontName, gm.fontSize)
+    # load sprite sheet
     moleSheet = pygame.image.load(os.path.join('Graphic', 'MoleUp.png'))
     #moleAni = ClassMolePopAni.MolePop(moleSheet,(64,64))
     farmerSheet = pygame.image.load(os.path.join('Graphic', 'MoleUp.png'))
+    # define Fonts
+    myfont = pygame.font.SysFont(gm.fontName, gm.fontSize)
+    titleFont = pygame.font.SysFont(gm.titleFont, gm.titleSize)
+    
+
 
     done = False
     clock = pygame.time.Clock()
@@ -156,18 +167,14 @@ def run(server, msgs_q, gm, width, height, role, mAI, fAI):
             if event.type == pygame.QUIT: # If user clicked close
                 done = True
                 pygame.quit()
-            else:       
-                if event.type == pygame.MOUSEBUTTONUP:
-                    if gm.gameState == 0:
+            else:
+                if gm.gameState == 0:       
+                    if event.type == pygame.MOUSEBUTTONUP:
                         pos = gm.convertPOS(pygame.mouse.get_pos())
                         if (pos[0] > 0 and pos[0] < gm.width
                             and pos[1] > 0 and pos[1] < gm.width):
-                            server.send(("%d %d %d %s\n"%(pos[0], pos[1],role,"Pl")).encode())
+                            server.send(("%d %d %d %s\n"%(pos[0], pos[1],gm.playerRole,"Pl")).encode())
 
-        if timer % 10 == 0 and mAI:
-            moleAI(gm,server)
-        if timer % 15 == 0 and fAI:
-            farmerAI(gm,server)
         if not done:
             if msgs_q.qsize() > 0:
                 msg = msgs_q.get()
@@ -187,6 +194,11 @@ def run(server, msgs_q, gm, width, height, role, mAI, fAI):
                     gm.moles[thatID]=classMoles.Moles.decodeMole(infoList[1])
 
                 if gm.gameState == 0:
+                    # AI generate moles and farmers
+                    if timer % 10 == 0 and gm.mAIOn:
+                        moleAI(gm,server)
+                    if timer % 15 == 0 and gm.fAIOn:
+                        farmerAI(gm,server)
                     drawMap(screen,field,grass,gm)
                     drawUI(width,height,screen,gm,myfont)
                     
@@ -230,14 +242,15 @@ def play(width = 800, height = 600):
     threading.Thread(target=handle_server_msgs, args=(server, msgs_q)).start()
 
     gm = classGameMap.gameMap(width,height)
+    op = classOpenScene.OpenScene(width,height)
     #mole = classMoles.Moles()
 
 
-    role = int(input("0=Farmer; 1 = moles"))
-    mAI = True
-    fAI = True
+    #role = int(input("0=Farmer; 1 = moles"))
+    #mAI = True
+    #fAI = True
 
-    run(server, msgs_q, gm, width,height, role, mAI,fAI)
+    run(server, msgs_q, gm, width,height)
 
 if __name__ == '__main__':
     play()
