@@ -330,7 +330,6 @@ def run(server, msgs_q, opSce, gm, width, height):
                         if opSce.selectionStage > 0 and opSce.selectionStage < 3:
                             opSce.selectionStage -=1
 
-
         if not done:
             if msgs_q.qsize() > 0:
                 msg = msgs_q.get()
@@ -402,6 +401,9 @@ def play(width = 800, height = 600):
     threading.Thread(target=handle_server_msgs, args=(server, msgs_q)).start()
 
     gm = classGameMap.gameMap(width,height)
+
+    opSce = classOpenScene.OpenScene(width,height)
+    gm.gameState = -1
     opSce = classOpenScene.OpenScene(width,height)
     gm.gameState = -1
     #mole = classMoles.Moles()
@@ -412,6 +414,7 @@ def play(width = 800, height = 600):
     #fAI = True
 
     run(server, msgs_q, opSce, gm, width,height)
+
 
 if __name__ == '__main__':
     play()

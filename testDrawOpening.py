@@ -103,7 +103,6 @@ def drawOpening(screen, opSce):
     else:
         screen.blit(opSce.allElement["sLoading"], opSce.allElement["sLoadingPos"])
 
-
 def testMain(screen,opSce,mole, farmer, gamestate):
     gameOn =True
     constructOpening(screen,opSce,mole,farmer)
@@ -123,6 +122,7 @@ def testMain(screen,opSce,mole, farmer, gamestate):
                             server.send(("%d %d %d %s\n"%(pos[0], pos[1],gm.playerRole,"Pl")).encode())
                 """
                 if gamestate == -1:
+
                     # keyboard suport for selecting the roles and AIs
                     if event.type == pygame.KEYUP:
                         if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
@@ -152,6 +152,7 @@ def testMain(screen,opSce,mole, farmer, gamestate):
                         elif opSce.selectionStage == 2:
                             if clickCheck(opSce.allElement["sMAIOn"],opSce.allElement["sMAIOnPos"],mousePos):
                                 opSce.mAIon = True
+
                                 opSce.selectionStage += 1
                             elif clickCheck(opSce.allElement["sMAIOff"],opSce.allElement["sMAIOffPos"],mousePos):
                                 opSce.mAIon = False
@@ -162,6 +163,10 @@ def testMain(screen,opSce,mole, farmer, gamestate):
                                 opSce.selectionStage +=1
                             elif clickCheck(opSce.allElement["sFAIOff"],opSce.allElement["sFAIOffPos"],mousePos):
                                 opSce.fAIon = False
+                                opSce.selectionStage +=1                                                           
+                    elif event.type == pygame.MOUSEBUTTONUP and event.button == 3:
+                        if opSce.selectionStage > 0 and opSce.selectionStage < 3:
+
                                 opSce.selectionStage +=1                                                           
                     elif event.type == pygame.MOUSEBUTTONUP and event.button == 3:
                         if opSce.selectionStage > 0 and opSce.selectionStage < 3:
