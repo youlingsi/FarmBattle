@@ -10,7 +10,6 @@ import classOpenScene
 ########### Socket Helper Functions  ##############
 # decode the info receved from the server and put it into a message queue
 # From:
-
 ###################################
 #       Socket Server Demo        #
 #         by Rohan Varma          #
