@@ -37,7 +37,7 @@ def server_thread(clientele, msg_q, gm):
         if msgReceive.strip().startswith("update"):
             gm.time -= 1/len(clientele)
             if int(gm.time) == 0:
-                gm.gameState = 1
+                gm.state = 1
                 print("game End")
             success = gm.moles[sender_ID].countDown()
             gm.scoreM += success

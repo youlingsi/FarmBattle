@@ -2,9 +2,6 @@ import random
 class gameMap(object):
     def __init__(self, width, height, tNum = 9, time = 120):
         self.gameState = -1 #0-game on, -1-openging, 1-ending
-        self.playerRole = 1 #0-farmer, 1-mole
-        self.mAIOn = False  #whether turn on the mole AI
-        self.fAIOn = False  #whether turn on the farmer AI
         self.width = width
         # exclude the size of the UI banner a the bottom
         # banner is 10% height of the screen andthe full width of the screen
@@ -97,8 +94,6 @@ class gameMap(object):
         return repr(stats)
 
     @staticmethod
-    # take in the size of the area and a surface block 
-    # return the coordinates that make the surface centered in the area
     def getPosCentered(sideLen, surface, direction):
         if direction == "x":
             return (sideLen - surface.get_rect().width)//2
