@@ -3,7 +3,6 @@ import pygame
 import classGameMap
 import classMoles
 import os
-import ClassMolePopAni
 import random
 
 # decode the info receved from the server and put it into a message queue
@@ -56,6 +55,10 @@ def updateGame(strState, gm):
     gm.scoreM = int(s[3])
     if gm.gameState == 1:
         print("end")
+    elif gm.gameState == -1:
+        print("Opening")
+    else:
+        print("gameON")
 
 # draw the base map
 def drawMap(screen,field, grass, gm):
@@ -101,7 +104,7 @@ def moleAI(gm,server):
         x = random.randint(gm.origin[0],gm.width-gm.origin[0])
         y = random.randint(gm.origin[1],gm.height-gm.origin[1])
         pos = gm.convertPOS((x,y))
-        server.send(("%d %d %d\n"%(pos[0], pos[1],1)).encode())
+        server.send(("%d %d %d %s\n"%(pos[0], pos[1],1,"AI")).encode())
 
 def farmerAI(gm, server):
     toCapture = random.randint(0,10)
@@ -112,7 +115,7 @@ def farmerAI(gm, server):
             mPos = gm.moles[keyList[i]][1]
             pos = mPos[random.randint(0,len(mPos)-1)]
             print(pos)
-            server.send(("%d %d %d\n"%(pos[0], pos[1],0)).encode())
+            server.send(("%d %d %d %s\n"%(pos[0], pos[1],0,"AI")).encode())
         except:
             pass
 
@@ -120,7 +123,9 @@ def farmerAI(gm, server):
 # run the game        
 def run(server, msgs_q, gm, width, height, role, mAI, fAI):
     pygame.init()
+    # create game screen
     screen=pygame.display.set_mode([width,height])
+    # load images
     moleImage = pygame.image.load(os.path.join('Graphic', 'MoleUp.png'))
     moleImage = pygame.transform.scale(moleImage, (gm.tileSize,gm.tileSize))
     grass = pygame.image.load(os.path.join('Graphic', 'Grass.png'))
@@ -129,7 +134,8 @@ def run(server, msgs_q, gm, width, height, role, mAI, fAI):
     field = pygame.transform.scale(field, (gm.tileSize,gm.tileSize))
     myfont = pygame.font.SysFont(gm.fontName, gm.fontSize)
     moleSheet = pygame.image.load(os.path.join('Graphic', 'MoleUp.png'))
-    moleAni = ClassMolePopAni.MolePop(moleSheet,(64,64))
+    #moleAni = ClassMolePopAni.MolePop(moleSheet,(64,64))
+    farmerSheet = pygame.image.load(os.path.join('Graphic', 'MoleUp.png'))
 
     done = False
     clock = pygame.time.Clock()
@@ -149,12 +155,14 @@ def run(server, msgs_q, gm, width, height, role, mAI, fAI):
         for event in pygame.event.get(): # User did something
             if event.type == pygame.QUIT: # If user clicked close
                 done = True
-                pygame.quit()         
-            elif event.type == pygame.MOUSEBUTTONUP:
-                pos = gm.convertPOS(pygame.mouse.get_pos())
-                if (pos[0] > 0 and pos[0] < gm.width
-                    and pos[1] > 0 and pos[1] < gm.width):
-                    server.send(("%d %d %d\n"%(pos[0], pos[1],role)).encode())
+                pygame.quit()
+            else:       
+                if event.type == pygame.MOUSEBUTTONUP:
+                    if gm.gameState == 0:
+                        pos = gm.convertPOS(pygame.mouse.get_pos())
+                        if (pos[0] > 0 and pos[0] < gm.width
+                            and pos[1] > 0 and pos[1] < gm.width):
+                            server.send(("%d %d %d %s\n"%(pos[0], pos[1],role,"Pl")).encode())
 
         if timer % 10 == 0 and mAI:
             moleAI(gm,server)
@@ -169,36 +177,37 @@ def run(server, msgs_q, gm, width, height, role, mAI, fAI):
                     msg.startswith('myid')):
                     newID = msg.split()[1]
                     gm.moles[newID] = ""
-                elif (msg.strip().startswith("!")):
-                    loadMap(msg.strip()[1:], gm)
                 elif (msg.strip().startswith("?")):
                     updateGame(msg.strip(), gm)
+                elif (msg.strip().startswith("!")):
+                    loadMap(msg.strip()[1:], gm)
                 else:
                     infoList = msg.split("+")
                     thatID = int(infoList[0])
                     gm.moles[thatID]=classMoles.Moles.decodeMole(infoList[1])
 
-                drawMap(screen,field,grass,gm)
-                drawUI(width,height,screen,gm,myfont)
-                
-                # draw all moles
-                for cID in gm.moles:
-                    try:
-                        mState = gm.moles[cID][0]
-                        mPos = gm.moles[cID][1]
-                        for i in range(len(mState)):
-                            pos = mPos[i]
-                            if mState[i] > 0:
-                                screen.blit(moleImage, pos)
-                                textsurface = myfont.render(str(cID)+"I", False, (0, 0, 0))
-                                screen.blit(textsurface,pos)
-                            elif mState[i] < 0:
-                                moleAni.moleSinkAni(screen,pos)
-                                screen.blit(moleImage, pos)
-                                textsurface = myfont.render(str(cID)+"D", False, (0, 0, 0))
-                                screen.blit(textsurface,pos)
-                    except:
-                        continue
+                if gm.gameState == 0:
+                    drawMap(screen,field,grass,gm)
+                    drawUI(width,height,screen,gm,myfont)
+                    
+                    # draw all moles
+                    for cID in gm.moles:
+                        try:
+                            mState = gm.moles[cID][0]
+                            mPos = gm.moles[cID][1]
+                            for i in range(len(mState)):
+                                pos = mPos[i]
+                                if mState[i] > 0:
+                                    screen.blit(moleImage, pos)
+                                    textsurface = myfont.render(str(cID)+"I", False, (0, 0, 0))
+                                    screen.blit(textsurface,pos)
+                                elif mState[i] < 0:
+                                    #moleAni.moleSinkAni(screen,pos)
+                                    screen.blit(moleImage, pos)
+                                    textsurface = myfont.render(str(cID)+"D", False, (0, 0, 0))
+                                    screen.blit(textsurface,pos)
+                        except:
+                            continue
     
                 # Go ahead and update the screen with what we've drawn.
                 # This MUST happen after all the other drawing commands.

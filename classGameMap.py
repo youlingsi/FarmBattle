@@ -1,7 +1,7 @@
 import random
 class gameMap(object):
     def __init__(self, width, height, tNum = 9, time = 120):
-        self.gameState = 0 #0-game on, -1-openging, 1-ending
+        self.gameState = -1 #0-game on, -1-openging, 1-ending
         self.width = width
         # exclude the size of the UI banner a the bottom
         # banner is 10% height of the screen andthe full width of the screen
