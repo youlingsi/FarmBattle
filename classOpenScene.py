@@ -13,6 +13,7 @@ class OpenScene(object):
         self.fontSize = self.titleSize//2
         self.fontName = 'Comic Sans MS'
         self.fontColor = (255,231,53)
+        self.fontMargin = (self.fontSize // 4,self.fontSize // 4)
         self.selectionStage = 0 #0=slect playerrol, 1 select mAI, 2 select fAI
         # selection 1:
         self.opt1 = "Select Players Role"

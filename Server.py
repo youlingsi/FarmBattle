@@ -1,6 +1,7 @@
 import socket, queue, threading
 import classGameMap
 import classMoles
+import ClassFarmer
 import random
 
 
@@ -24,7 +25,7 @@ def handle_client(client_conn, msg_q, client_ID, clientele, bufsize=16):
             msg_q.put(msg_put)
 
 # takes messages from message queue, sends to everyone except the sender
-def server_thread(clientele, msg_q, gm):
+def server_thread(clientele, msg_q, gm, players):
     while True:
         # gets & formats a message
         ready_msg = msg_q.get() + '\n'
@@ -34,37 +35,55 @@ def server_thread(clientele, msg_q, gm):
         update_ID = sender_ID
         #msgContent = ready_msg[ready_msg.index(' '):].strip().split(",")
         msgReceive = ready_msg.split("+")[1]
-        if msgReceive.strip().startswith("update"):
-            gm.time -= 1/len(clientele)
-            if int(gm.time) == 0:
-                gm.gameState = 1
-                print("game End")
-            success = gm.moles[sender_ID].countDown()
-            gm.scoreM += success
-            msgContent = gm.moles[sender_ID].__repr__()
-            msgOut = "%s+%s\n"%(sender_ID, msgContent)
-        else:
-            strPos = msgReceive.split()
-            pos = (int(strPos[0]), int(strPos[1]))
-            role = int(strPos[2])
-            if role == 1:
-                gm.moles[sender_ID].spawnMoles(pos,gm)
+        # manipulate the message
+        msgOut = ""
+        msgStateUpdate = "" 
+        print("state", gm.gameState)
+        if gm.gameState == -1:
+            if msgReceive.strip().startswith("ready"):
+                msg = msgReceive.strip().split(",")
+                print("msg", msg)
+                players[sender_ID] = [int(msg[1]), int(msg[2]),int(msg[3])]
+            elif msgReceive.strip().startswith("update"):
+                if len(players) > 0:
+                    gm.loading -= 1/3/len(clientele)
+                    print(gm.loading)
+                    if gm.loading <= 0:
+                        gm.gameState = 0
+        elif gm.gameState == 0:
+            if msgReceive.strip().startswith("update"):
+                gm.time -= 1/3/len(clientele)
+                if int(gm.time) == 0:
+                    gm.gameState = 1
+                success = gm.moles[sender_ID].countDown()
+                gm.scoreM += success
                 msgContent = gm.moles[sender_ID].__repr__()
-            elif role == 0:
-                for cID in gm.moles:
-                    if gm.moles[cID].moleHit(pos,gm):
-                        msgContent = gm.moles[cID].__repr__()
-                        update_ID = cID
-                        gm.scoreF += 1
-                        break
-                    else:
-                        msgContent = gm.moles[sender_ID].__repr__()
-            msgOut = "%s+%s\n"%(update_ID, msgContent)
+                msgOut = "%s+%s\n"%(sender_ID, msgContent)
+            else:
+                strPos = msgReceive.split()
+                pos = (int(strPos[0]), int(strPos[1]))
+                role = int(strPos[2])
+                if role == 1:
+                    gm.moles[sender_ID].spawnMoles(pos,gm)
+                    msgContent = gm.moles[sender_ID].__repr__()
+                elif role == 0:
+                    # send farmer to the position
+                    # check collision
+                    for cID in gm.moles:
+                        if gm.moles[cID].moleHit(pos,gm):
+                            msgContent = gm.moles[cID].__repr__()
+                            update_ID = cID
+                            gm.scoreF += 1
+                            break
+                        else:
+                            msgContent = gm.moles[sender_ID].__repr__()
+                msgOut = "%s+%s\n"%(update_ID, msgContent)
+        # send out the messages
         for client_ID in clientele:
             # sends to all
+            msgStateUpdate = "?%d,%d,%d,%d\n"%(gm.gameState,gm.time,gm.scoreF,gm.scoreM)
             clientele[client_ID].send(msgOut.encode())
-            clientele[client_ID].send(("?%d,%d,%d,%d\n"%
-                        (gm.gameState,gm.time,gm.scoreF,gm.scoreM)).encode())
+            clientele[client_ID].send(msgStateUpdate.encode())
         
 
 
@@ -86,15 +105,14 @@ def play(width = 800, height = 600):
     #initiate the map
     gm = classGameMap.gameMap(width, height)
     gm.mapGenerater()
-    #mole = classMoles.Moles()
+    players = {}
 
     
 # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     threading.Thread(target=server_thread,
-                     args=(clientele, msg_q, gm)).start()
+                     args=(clientele, msg_q, gm, players)).start()
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     while True:
-        print("new Client")
         (new_client_conn, address) = server.accept()
         # assigns unique ID
         new_client_ID = str(num_conns)
@@ -131,9 +149,6 @@ def play(width = 800, height = 600):
         new_client_conn.send(newConnInit.encode())
         # sends init map
         new_client_conn.send(("!%s\n" % gm.mapRepre()).encode())
-        # send init game state
-        new_client_conn.send(("?%d,%d,%d,%d\n"%
-                        (gm.gameState,gm.time,gm.scoreF,gm.scoreM)).encode())
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         threading.Thread(target=handle_client,
                          args=(new_client_conn, msg_q, new_client_ID,

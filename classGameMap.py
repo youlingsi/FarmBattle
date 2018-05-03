@@ -1,6 +1,6 @@
 import random
 class gameMap(object):
-    def __init__(self, width, height, tNum = 9, time = 120):
+    def __init__(self, width, height, tNum = 9, time = 120, loadingTime = 15):
         self.gameState = -1 #0-game on, -1-openging, 1-ending
         self.playerRole = 1 #0-farmer, 1-mole
         self.mAIOn = False  #whether turn on the mole AI
@@ -17,6 +17,7 @@ class gameMap(object):
         # the map is a rectangle grid map
         self.mpSize = (int(self.width//self.tileSize), int(self.height//self.tileSize))
         self.moles = {} 
+        self.farmers = {}
         # dict of the map
         # key is the tuple of the index
         # values are : 0, 1, 2
@@ -28,6 +29,7 @@ class gameMap(object):
         self.scoreM = 0
         # contdown time
         self.time = time
+        self.loading = loadingTime
         # UI properties
         # backgroung color
         self.BGcolor = (20,50,20)

@@ -37,6 +37,13 @@ def clickCheck(surf, surPos, pos):
     rec = rec.move(surPos)
     return rec.collidepoint(pos)
 
+# Generate circle the object with red frame
+def selectObj(screen,surf, surPos, margin):
+    rec = surf.get_rect()
+    rec = rec.move(surPos)
+    rec = rec.inflate(margin)
+    pygame.draw.rect(screen, (255,0,0), rec, 2)
+
 # Calculate the positions and construct the opening Scene
 def constructOpening(screen, opSce,mole, farmer):
     # generate fonts
@@ -80,7 +87,6 @@ def constructOpening(screen, opSce,mole, farmer):
 # Draw the opening Scene
 def drawOpening(screen, opSce):
     screen.fill(opSce.BGcolor)
-    RED = (255,0,0)
     assert(opSce.allElement!={})
     screen.blit(opSce.allElement["sTitle"],opSce.allElement["sTitlePos"])
     if opSce.selectionStage == 0:
@@ -88,13 +94,9 @@ def drawOpening(screen, opSce):
         screen.blit(opSce.allElement["farmer"],opSce.allElement["farmerPos"])
         screen.blit(opSce.allElement["mole"],opSce.allElement["molePos"])
         if opSce.playerRole == 0:
-            rec = opSce.allElement["farmer"].get_rect()
-            rec = rec.move(opSce.allElement["farmerPos"])
-            pygame.draw.rect(screen, RED, rec, 2)
+            selectObj(screen,opSce.allElement["farmer"],opSce.allElement["farmerPos"],opSce.fontMargin)
         else:
-            rec = opSce.allElement["mole"].get_rect()
-            rec = rec.move(opSce.allElement["molePos"])
-            pygame.draw.rect(screen, RED, rec, 2)
+            selectObj(screen,opSce.allElement["mole"],opSce.allElement["molePos"],opSce.fontMargin)
     elif opSce.selectionStage >= 1 and opSce.selectionStage < 3:
         screen.blit(opSce.allElement["sOpt2"],opSce.allElement["sOpt1Pos"])
         screen.blit(opSce.allElement["sMAIOn"],opSce.allElement["sMAIOnPos"])
@@ -102,23 +104,21 @@ def drawOpening(screen, opSce):
         screen.blit(opSce.allElement["sFAIOn"],opSce.allElement["sFAIOnPos"])
         screen.blit(opSce.allElement["sFAIOff"],opSce.allElement["sFAIOffPos"])
         if opSce.mAIon:
-            rec = opSce.allElement["sMAIOn"].get_rect()
-            rec = rec.move(opSce.allElement["sMAIOnPos"])
-            pygame.draw.rect(screen, RED, rec, 2)
+            selectObj(screen,opSce.allElement["sMAIOn"],opSce.allElement["sMAIOnPos"],opSce.fontMargin)
         else:
-            rec = opSce.allElement["sMAIOff"].get_rect()
-            rec = rec.move(opSce.allElement["sMAIOffPos"])
-            pygame.draw.rect(screen, RED, rec, 2)
+            selectObj(screen,opSce.allElement["sMAIOff"],opSce.allElement["sMAIOffPos"],opSce.fontMargin)
         if opSce.fAIon:
-            rec = opSce.allElement["sFAIOn"].get_rect()
-            rec = rec.move(opSce.allElement["sFAIOnPos"])
-            pygame.draw.rect(screen, RED, rec, 2)
+            selectObj(screen,opSce.allElement["sFAIOn"],opSce.allElement["sFAIOnPos"],opSce.fontMargin)
         else:
-            rec = opSce.allElement["sFAIOff"].get_rect()
-            rec = rec.move(opSce.allElement["sFAIOffPos"])
-            pygame.draw.rect(screen, RED, rec, 2)
+            selectObj(screen,opSce.allElement["sFAIOff"],opSce.allElement["sFAIOffPos"],opSce.fontMargin)
     else:
         screen.blit(opSce.allElement["sLoading"], opSce.allElement["sLoadingPos"])
+
+# get the game map read and send message to server
+def gameReady(opSce, gm, server):
+    opSce.selectionTogm(gm)
+    plyrMsg = "ready,%d,%d,%d\n"%(gm.playerRole, int(gm.mAIOn), int(gm.fAIOn))
+    server.send(plyrMsg.encode())
 
 ###################################################
 ########### Game Scene Helper Functions ###########
@@ -196,7 +196,7 @@ def drawUI(width, height, screen, gm, myfont):
 ######## Ending Scene #############
 
 def drawEnding(width, height, screen, gm, myfont):
-    pos = (width/2, height/2)
+    screen.fill(gm.BGcolor)    
     winMsg = ""
     if gm.scoreF > gm.scoreM:
         winMsg = "Farmer Team Wins!"
@@ -205,6 +205,8 @@ def drawEnding(width, height, screen, gm, myfont):
     else:
         winMsg = "It's a tie!"
     win = myfont.render(winMsg, False, gm.fontColor)
+    pos = (gm.getPosCentered(width,win,"x"), 
+        gm.getPosCentered(height,win,"y"))
     screen.blit(win,pos)
 
 
@@ -233,6 +235,22 @@ def farmerAI(gm, server):
         except:
             pass
 
+####################################
+####### Sprite Helper Function #####
+
+def loadAllFrames(sheet, size, gridSize):
+    x = sheet.get_rect().width//size[0]
+    y = sheet.get_rect().height//size[1]
+    sprites = []
+    for i in range(x):
+        group = []
+        for j in range(y):
+            sp = sheet.subsurface(size[0]*i, size[1]*j, size[0], size[1])
+            sp = pygame.transform.scale(sp, gridSize)
+            group.append(sp)
+        sprites.append(group)
+    return sprites
+
 ################################################################
 ###############  Main Game Play ################################
 # run the game        
@@ -241,20 +259,24 @@ def run(server, msgs_q, opSce, gm, width, height):
     # create game screen
     screen=pygame.display.set_mode([width,height])
     # load images
-    moleImage = pygame.image.load(os.path.join('Graphic', 'MoleUp.png'))
-    moleImage = pygame.transform.scale(moleImage, (gm.tileSize,gm.tileSize))
+    #moleImage = pygame.image.load(os.path.join('Graphic', 'MoleUp.png'))
+    #moleImage = pygame.transform.scale(moleImage, (gm.tileSize,gm.tileSize))
     # Load ground tiles
     grass = pygame.image.load(os.path.join('Graphic', 'Grass.png'))
     grass = pygame.transform.scale(grass, (gm.tileSize,gm.tileSize))
     field = pygame.image.load(os.path.join('Graphic', 'Field.png'))
     field = pygame.transform.scale(field, (gm.tileSize,gm.tileSize))
     # load sprite sheet
-    moleSheet = pygame.image.load(os.path.join('Graphic', 'MoleUp.png'))
-    #moleAni = ClassMolePopAni.MolePop(moleSheet,(64,64))
-    farmerSheet = pygame.image.load(os.path.join('Graphic', 'MoleUp.png'))
+    moleSheet = pygame.image.load(os.path.join('Graphic', 'MoleSheet.png'))
+    farmerSheet = pygame.image.load(os.path.join('Graphic', 'FarmerWalkSheet.png'))
+    moleSp = loadAllFrames(moleSheet,(64,64), (64,64))
+    farmerSp = loadAllFrames(farmerSheet,(100,100), (64,64))
+    moleImage = moleSp[4][0]
+    farmerImage = farmerSp[0][0]
+    moleStunImage = moleSp[5][0]
     # define Fonts
     myfont = pygame.font.SysFont(gm.fontName, gm.fontSize)
-    constructOpening(screen,opSce,moleImage,moleImage)
+    constructOpening(screen,opSce,moleImage,farmerImage)
     
     done = False
     clock = pygame.time.Clock()
@@ -268,7 +290,7 @@ def run(server, msgs_q, opSce, gm, width, height):
         clock.tick(30)
 
         timer += 1
-        if timer % 30 == 0:
+        if timer % 10 == 0:
             server.send("update\n".encode())
         # Handle the imput and events
         for event in pygame.event.get(): # User did something
@@ -282,7 +304,7 @@ def run(server, msgs_q, opSce, gm, width, height):
                         if (pos[0] > 0 and pos[0] < gm.width
                             and pos[1] > 0 and pos[1] < gm.width):
                             server.send(("%d %d %d %s\n"%(pos[0], pos[1],gm.playerRole,"Pl")).encode())
-                elif gm.gamestate == -1:
+                elif gm.gameState == -1:
                     # keyboard suport for selecting the roles and AIs
                     if event.type == pygame.KEYUP:
                         if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
@@ -295,6 +317,8 @@ def run(server, msgs_q, opSce, gm, width, height):
                         if event.key == pygame.K_RETURN:
                             if opSce.selectionStage < 3:
                                 opSce.selectionStage += 1
+                            if opSce.selectionStage == 3:
+                                gameReady(opSce,gm,server)
                         elif (event.key == pygame.K_ESCAPE 
                                 and opSce.selectionStage > 0
                                 and opSce.selectionStage < 3):
@@ -323,8 +347,7 @@ def run(server, msgs_q, opSce, gm, width, height):
                             elif clickCheck(opSce.allElement["sFAIOff"],opSce.allElement["sFAIOffPos"],mousePos):
                                 opSce.fAIon = False
                                 opSce.selectionStage +=1
-                                opSce.selectionTogm(gm)
-                                server.send("ready\n".encode())
+                                gameReady(opSce,gm,server)
 
                     elif event.type == pygame.MOUSEBUTTONUP and event.button == 3:
                         if opSce.selectionStage > 0 and opSce.selectionStage < 3:
@@ -359,6 +382,7 @@ def run(server, msgs_q, opSce, gm, width, height):
                     
                     # draw all moles
                     for cID in gm.moles:
+                        print("moleKeys",gm.moles.keys())
                         try:
                             mState = gm.moles[cID][0]
                             mPos = gm.moles[cID][1]
@@ -366,12 +390,12 @@ def run(server, msgs_q, opSce, gm, width, height):
                                 pos = mPos[i]
                                 if mState[i] > 0:
                                     screen.blit(moleImage, pos)
-                                    textsurface = myfont.render(str(cID)+"I", False, (0, 0, 0))
+                                    textsurface = myfont.render(str(cID), False, (0, 0, 0))
                                     screen.blit(textsurface,pos)
                                 elif mState[i] < 0:
                                     #moleAni.moleSinkAni(screen,pos)
-                                    screen.blit(moleImage, pos)
-                                    textsurface = myfont.render(str(cID)+"D", False, (0, 0, 0))
+                                    screen.blit(moleStunImage, pos)
+                                    textsurface = myfont.render(str(cID), False, (0, 0, 0))
                                     screen.blit(textsurface,pos)
                         except:
                             continue

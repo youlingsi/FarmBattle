@@ -19,6 +19,7 @@ gamestate = -1
 def clickCheck(surf, surPos, pos):
     rec = surf.get_rect()
     rec = rec.move(surPos)
+    rec = rec.inflate(3,3)
     return rec.collidepoint(pos)
 
 # Calculate the positions and construct the opening Scene
