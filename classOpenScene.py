@@ -36,5 +36,5 @@ class OpenScene(object):
     #pass the players selection to game map
     def selectionTogm(self,gm):
         gm.playerRole = self.playerRole
-        gm.mAIon = self.mAIon
-        gm.fAIon = self.fAIon
+        gm.mAIOn = self.mAIon
+        gm.fAIOn = self.fAIon

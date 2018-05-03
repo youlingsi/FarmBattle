@@ -211,29 +211,7 @@ def drawEnding(width, height, screen, gm, myfont):
     screen.blit(win,pos)
 
 
-###################################
-###### Game AIs ###################
-##AI of the moles. spawn a mole 
-def moleAI(gm,server):
-    toSpawn = random.randint(0,1)
-    if toSpawn:
-        x = random.randint(gm.origin[0],gm.width-gm.origin[0])
-        y = random.randint(gm.origin[1],gm.height-gm.origin[1])
-        pos = gm.convertPOS((x,y))
-        server.send(("%d %d %d %s\n"%(pos[0], pos[1],1,"AI")).encode())
 
-## AI of the Farmer
-def farmerAI(gm, server):
-    toCapture = random.randint(0,10)
-    if toCapture == 5:
-        keyList = list(gm.moles.keys())
-        i = random.randint(0,len(keyList)-1)
-        try:
-            mPos = gm.moles[keyList[i]][1]
-            pos = mPos[random.randint(0,len(mPos)-1)]
-            server.send(("%d %d %d %s\n"%(pos[0], pos[1],0,"AI")).encode())
-        except:
-            pass
 
 ####################################
 ####### Sprite Helper Function #####
@@ -290,7 +268,7 @@ def run(server, msgs_q, opSce, gm, width, height):
         clock.tick(30)
 
         timer += 1
-        if timer % 5 == 0:
+        if timer % 10 == 0:
             server.send("update\n".encode())
         # Handle the imput and events
         for event in pygame.event.get(): # User did something
@@ -368,18 +346,14 @@ def run(server, msgs_q, opSce, gm, width, height):
                     loadMap(msg.strip()[1:], gm)
                 else:
                     infoList = msg.split("+")
-                    thatID = int(infoList[0])
+                    #thatID = int(infoList[0])
+                    thatID = infoList[0]
                     if not infoList[1] == "":
                         gm.moles[thatID]=classMoles.Moles.decodeMole(infoList[1])
                     if not infoList[2] == "":
                         gm.farmers[thatID] = ClassFarmer.Farmer.decodeFarmer(infoList[2])
 
                 if gm.gameState == 0:
-                    # AI generate moles and farmers
-                    if timer % 10 == 0 and gm.mAIOn:
-                        moleAI(gm,server)
-                    if timer % 15 == 0 and gm.fAIOn:
-                        farmerAI(gm,server)
                     drawMap(screen,field,grass,gm)
                     drawUI(width,height,screen,gm,myfont)
                     
@@ -407,6 +381,8 @@ def run(server, msgs_q, opSce, gm, width, height):
                             fPos = gm.farmers[cID][0]
                             if fPos != (-100,-100):
                                 screen.blit(farmerImage,fPos)
+                                textsurface = myfont.render(str(cID), False, (0, 0, 0))
+                                screen.blit(textsurface,fPos)
                         except:
                             continue
 

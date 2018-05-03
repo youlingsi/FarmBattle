@@ -5,7 +5,7 @@ class Farmer(object):
         #self.moveSteps = (0,0)
         #self.AllDirection = [(-1,0),(0,-1),(1,0),(0,1)]
         self.route = []
-        self.moving = False
+        self.moving = False        
 
     def getRoute(self, gm):
         if (not self.moving) and self.target[0]> 0:
@@ -37,6 +37,7 @@ class Farmer(object):
     def moveFarmer(self):
         if self.route == []:
             self.moving = False
+            self.target = (-100,-100)
         if self.moving:
             self.pos = self.route[-1]
             self.route.pop()

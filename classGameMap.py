@@ -21,7 +21,7 @@ class gameMap(object):
         # dict of the map
         # key is the tuple of the index
         # values are : 0, 1, 2
-        # 1 = field tile; 0 = grass tile; 2 = ocupied
+        # 1 = field tile; 0 = grass tile; 
         self.map = {}
         # score of the farmer(s)
         self.scoreF = 0
