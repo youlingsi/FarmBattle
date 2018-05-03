@@ -5,6 +5,7 @@ import classMoles
 import os
 import random
 import classOpenScene
+import ClassFarmer
 
 ###################################################
 ########### Socket Helper Functions  ##############
@@ -230,7 +231,6 @@ def farmerAI(gm, server):
         try:
             mPos = gm.moles[keyList[i]][1]
             pos = mPos[random.randint(0,len(mPos)-1)]
-            print(pos)
             server.send(("%d %d %d %s\n"%(pos[0], pos[1],0,"AI")).encode())
         except:
             pass
@@ -290,7 +290,7 @@ def run(server, msgs_q, opSce, gm, width, height):
         clock.tick(30)
 
         timer += 1
-        if timer % 10 == 0:
+        if timer % 5 == 0:
             server.send("update\n".encode())
         # Handle the imput and events
         for event in pygame.event.get(): # User did something
@@ -369,7 +369,10 @@ def run(server, msgs_q, opSce, gm, width, height):
                 else:
                     infoList = msg.split("+")
                     thatID = int(infoList[0])
-                    gm.moles[thatID]=classMoles.Moles.decodeMole(infoList[1])
+                    if not infoList[1] == "":
+                        gm.moles[thatID]=classMoles.Moles.decodeMole(infoList[1])
+                    if not infoList[2] == "":
+                        gm.farmers[thatID] = ClassFarmer.Farmer.decodeFarmer(infoList[2])
 
                 if gm.gameState == 0:
                     # AI generate moles and farmers
@@ -382,7 +385,6 @@ def run(server, msgs_q, opSce, gm, width, height):
                     
                     # draw all moles
                     for cID in gm.moles:
-                        print("moleKeys",gm.moles.keys())
                         try:
                             mState = gm.moles[cID][0]
                             mPos = gm.moles[cID][1]
@@ -399,6 +401,15 @@ def run(server, msgs_q, opSce, gm, width, height):
                                     screen.blit(textsurface,pos)
                         except:
                             continue
+                    # draw all farmers
+                    for cID in gm.farmers:
+                        try:
+                            fPos = gm.farmers[cID][0]
+                            if fPos != (-100,-100):
+                                screen.blit(farmerImage,fPos)
+                        except:
+                            continue
+
                 elif gm.gameState == -1:
                     drawOpening(screen,opSce)
                 elif gm.gameState == 1:

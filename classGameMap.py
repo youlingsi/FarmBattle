@@ -1,6 +1,6 @@
 import random
 class gameMap(object):
-    def __init__(self, width, height, tNum = 9, time = 120, loadingTime = 15):
+    def __init__(self, width, height, tNum = 9, time = 120, loadingTime = 5):
         self.gameState = -1 #0-game on, -1-openging, 1-ending
         self.playerRole = 1 #0-farmer, 1-mole
         self.mAIOn = False  #whether turn on the mole AI

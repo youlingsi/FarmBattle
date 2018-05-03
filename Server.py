@@ -37,28 +37,38 @@ def server_thread(clientele, msg_q, gm, players):
         msgReceive = ready_msg.split("+")[1]
         # manipulate the message
         msgOut = ""
-        msgStateUpdate = "" 
-        print("state", gm.gameState)
+        msgStateUpdate = ""
+        msgContent = ""
+        msgFarmer = ""
+        msgColision = ""
         if gm.gameState == -1:
             if msgReceive.strip().startswith("ready"):
                 msg = msgReceive.strip().split(",")
-                print("msg", msg)
                 players[sender_ID] = [int(msg[1]), int(msg[2]),int(msg[3])]
             elif msgReceive.strip().startswith("update"):
                 if len(players) > 0:
                     gm.loading -= 1/3/len(clientele)
-                    print(gm.loading)
                     if gm.loading <= 0:
                         gm.gameState = 0
         elif gm.gameState == 0:
             if msgReceive.strip().startswith("update"):
-                gm.time -= 1/3/len(clientele)
+                gm.time -= 1/6/len(clientele)
                 if int(gm.time) == 0:
                     gm.gameState = 1
                 success = gm.moles[sender_ID].countDown()
                 gm.scoreM += success
+                gm.farmers[sender_ID].moveFarmer()
+                msgFarmer = gm.farmers[sender_ID].encodeFarmer()
                 msgContent = gm.moles[sender_ID].__repr__()
-                msgOut = "%s+%s\n"%(sender_ID, msgContent)
+                msgOut = "%s+%s+%s\n"%(sender_ID, msgContent,msgFarmer)                                     
+                # check collision
+                for cID in gm.moles:
+                    if gm.moles[cID].moleHit(gm.farmers[sender_ID].pos,gm):
+                        msg = gm.moles[cID].__repr__()
+                        update_ID = cID
+                        gm.scoreF += 1
+                        msgColision="%s+%s+%s\n"%(update_ID,msg,"")
+                        break
             else:
                 strPos = msgReceive.split()
                 pos = (int(strPos[0]), int(strPos[1]))
@@ -68,22 +78,22 @@ def server_thread(clientele, msg_q, gm, players):
                     msgContent = gm.moles[sender_ID].__repr__()
                 elif role == 0:
                     # send farmer to the position
-                    # check collision
-                    for cID in gm.moles:
-                        if gm.moles[cID].moleHit(pos,gm):
-                            msgContent = gm.moles[cID].__repr__()
-                            update_ID = cID
-                            gm.scoreF += 1
-                            break
-                        else:
-                            msgContent = gm.moles[sender_ID].__repr__()
-                msgOut = "%s+%s\n"%(update_ID, msgContent)
+                    if gm.farmers[sender_ID].pos == (-100, -100):
+                        gm.farmers[sender_ID].pos = gm.convertPOS(pos)
+                        msgFarmer = gm.farmers[sender_ID].encodeFarmer()
+                    else:
+                        if gm.farmers[sender_ID].target == (-100, -100):
+                            gm.farmers[sender_ID].target = gm.convertPOS(pos)
+                            gm.farmers[sender_ID].getRoute(gm)
+                    msgFarmer = gm.farmers[sender_ID].encodeFarmer()   
+                    msgOut = "%s+%s+%s\n"%(sender_ID, msgContent,msgFarmer)
         # send out the messages
         for client_ID in clientele:
             # sends to all
             msgStateUpdate = "?%d,%d,%d,%d\n"%(gm.gameState,gm.time,gm.scoreF,gm.scoreM)
             clientele[client_ID].send(msgOut.encode())
             clientele[client_ID].send(msgStateUpdate.encode())
+            clientele[client_ID].send(msgColision.encode())
         
 
 
@@ -120,12 +130,14 @@ def play(width = 800, height = 600):
 # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         # generates random initial states
         #moleShow = random.randint(1,2)
-        moleShow = 5
+        moleShow = 30
         moleNum = 3
         gm.moles[new_client_ID] = classMoles.Moles(moleShow,moleNum)
         reprMole = gm.moles[new_client_ID].__repr__()
+        gm.farmers[new_client_ID] = ClassFarmer.Farmer()
+        reprFarmer = gm.farmers[new_client_ID].encodeFarmer()
         # constructs the initialization message to be sent to all
-        newConnInit = '%s+%s\n ' % (new_client_ID, reprMole)
+        newConnInit = '%s+%s+%s\n ' % (new_client_ID, reprMole,reprFarmer)
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         # constructs the message to be sent to all existing connections
         new_conn_msg = 'newconn %s\n' % new_client_ID
@@ -137,7 +149,7 @@ def play(width = 800, height = 600):
 # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             # sends init message
             #clientele[client_ID].send(newConnInit.encode())
-            initOld = '%s+%s\n' % (client_ID, gm.moles[client_ID].__repr__())
+            initOld = '%s+%s+%s\n' % (client_ID, gm.moles[client_ID].__repr__(),"")
             new_client_conn.send(initOld.encode())
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         clientele[new_client_ID] = new_client_conn
